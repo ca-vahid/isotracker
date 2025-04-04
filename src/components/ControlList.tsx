@@ -38,6 +38,7 @@ export function ControlList() {
   const [viewDensity, setViewDensity] = useState<ViewDensity>('medium');
   const [selectedControlIds, setSelectedControlIds] = useState<string[]>([]);
   const [newItemIds, addNewItem] = useNewItemAnimation(3000); // Animation lasts 3 seconds
+  const [activeControl, setActiveControl] = useState<Control | null>(null);
 
   // Keyboard shortcut for adding a new control
   useEffect(() => {
@@ -380,6 +381,35 @@ export function ControlList() {
       }
   }, [controls, addNewItem]); // Add addNewItem to dependency array
 
+  // Handler for cloning a control
+  const handleCloneControl = useCallback(async (controlToClone: Control) => {
+    setError(null);
+    
+    // Create a new control based on the cloned one
+    const newControlData: Omit<Control, 'id'> = {
+      dcfId: controlToClone.dcfId,
+      title: `${controlToClone.title} (Clone)`,
+      explanation: controlToClone.explanation,
+      status: ControlStatus.InProgress, // Reset status to InProgress
+      assigneeId: null, // Reset assignee
+      estimatedCompletionDate: null, // Reset date
+      order: controls.length, // Add to the end of the list
+      priorityLevel: controlToClone.priorityLevel,
+      tags: [...(controlToClone.tags || [])],
+      progress: 0, // Reset progress
+      lastUpdated: Timestamp.now(),
+      externalUrl: controlToClone.externalUrl // Keep the external URL
+    };
+    
+    // Use the existing handleAddControl function to add the cloned control
+    try {
+      await handleAddControl(newControlData);
+    } catch (error: any) {
+      console.error("Failed to clone control:", error);
+      setError(`Failed to clone control: ${error.message}`);
+    }
+  }, [controls.length, handleAddControl]);
+
   // Drag End Handler
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -499,11 +529,12 @@ export function ControlList() {
           technicians={technicians}
           onUpdateControl={handleUpdateControl}
           onDeleteControl={handleDeleteControl}
+          onCloneControl={handleCloneControl}
           viewDensity={viewDensity}
         />
       </div>
     );
-  }, [technicians, handleUpdateControl, handleDeleteControl, viewDensity, newItemIds]);
+  }, [technicians, handleUpdateControl, handleDeleteControl, handleCloneControl, viewDensity, newItemIds]);
 
   // Render logic
   if (loading) {
@@ -697,6 +728,7 @@ export function ControlList() {
               viewDensity={viewDensity}
               onUpdateControl={handleUpdateControl}
               onDeleteControl={handleDeleteControl}
+              onCloneControl={handleCloneControl}
               onDragEnd={handleDragEnd}
               renderControl={renderControl}
             />

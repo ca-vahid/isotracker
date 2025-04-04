@@ -10,6 +10,7 @@ interface ControlCardProps {
   onUpdateControl: (id: string, updates: Partial<Omit<Control, 'id'>>) => Promise<void>;
   onDeleteControl: (id: string) => Promise<void>;
   viewDensity?: ViewDensity; // Add view density prop with default value
+  onCloneControl?: (control: Control) => Promise<void>; // Add clone function prop
   // Add props for drag-and-drop if needed later
 }
 
@@ -137,7 +138,8 @@ export function ControlCard({
   technicians, 
   onUpdateControl, 
   onDeleteControl,
-  viewDensity = 'medium' // Default to medium density
+  viewDensity = 'medium', // Default to medium density
+  onCloneControl, // Add clone function prop
 }: ControlCardProps) {
   const [isEditingExplanation, setIsEditingExplanation] = useState(false);
   const [explanationDraft, setExplanationDraft] = useState(control.explanation);
@@ -516,6 +518,23 @@ export function ControlCard({
                 </span>
               )}
               
+              {/* Clone button - compact view */}
+              {control.status === ControlStatus.Complete && onCloneControl && (
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onCloneControl(control);
+                  }}
+                  className="text-gray-400 hover:text-emerald-600 p-0.5 rounded-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                  title="Clone control"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3">
+                    <path d="M7 3.5A1.5 1.5 0 018.5 2h3.879a1.5 1.5 0 011.06.44l3.122 3.12A1.5 1.5 0 0117 6.622V12.5a1.5 1.5 0 01-1.5 1.5h-1v-3.379a3 3 0 00-.879-2.121L10.5 5.379A3 3 0 008.379 4.5H7v-1z" />
+                    <path d="M4.5 6A1.5 1.5 0 003 7.5v9A1.5 1.5 0 004.5 18h7a1.5 1.5 0 001.5-1.5v-5.879a1.5 1.5 0 00-.44-1.06L9.44 6.439A1.5 1.5 0 008.378 6H4.5z" />
+                  </svg>
+                </button>
+              )}
+              
               {/* Delete button - compact */}
               <button 
                 onClick={(e) => {
@@ -637,20 +656,38 @@ export function ControlCard({
                 </div>
               </div>
               
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDeleteClick(e);
-                }} 
-                className="text-gray-400 hover:text-red-600 p-1 rounded-md flex-shrink-0"
-                aria-label="Delete control"
-                title="Delete control"
-                disabled={isDeleting}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
-                  <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-                </svg>
-              </button>
+              <div className="flex items-center">
+                {/* Clone button - medium view */}
+                {control.status === ControlStatus.Complete && onCloneControl && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onCloneControl(control);
+                    }}
+                    className="text-gray-400 hover:text-emerald-600 p-1 rounded-md mr-1 transition-colors group-hover:opacity-100 opacity-0"
+                    title="Clone this control"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                  </button>
+                )}
+              
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteClick(e);
+                  }} 
+                  className="text-gray-400 hover:text-red-600 p-1 rounded-md flex-shrink-0"
+                  aria-label="Delete control"
+                  title="Delete control"
+                  disabled={isDeleting}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
+                    <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              </div>
             </div>
             
             {/* Progress bar for controls with progress */}
@@ -731,6 +768,22 @@ export function ControlCard({
               {control.status}
             </span>
             
+            {/* Clone button - visible only for completed controls */}
+            {control.status === ControlStatus.Complete && onCloneControl && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onCloneControl(control);
+                }}
+                className="text-gray-400 hover:text-emerald-600 p-1 rounded-md transition-colors"
+                title="Clone this control"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+              </button>
+            )}
+            
             {/* Menu button */}
             <div className="relative" ref={menuRef}>
               <button
@@ -799,6 +852,22 @@ export function ControlCard({
                     </svg>
                     View Explanation
                   </button>
+                  {/* Clone option - only show for completed controls */}
+                  {control.status === ControlStatus.Complete && onCloneControl && (
+                    <button 
+                      className="w-full text-left px-4 py-2 text-sm text-emerald-700 hover:bg-emerald-50 flex items-center"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setMenuOpen(false);
+                        onCloneControl(control);
+                      }}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                      Clone Control
+                    </button>
+                  )}
                   {/* Delete option in menu */}
                   <button 
                     className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center"
@@ -864,7 +933,7 @@ export function ControlCard({
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
                       <path fillRule="evenodd" d="M15.75 2.25H21a.75.75 0 01.75.75v5.25a.75.75 0 01-1.5 0V4.81L8.03 17.03a.75.75 0 01-1.06-1.06L19.19 3.75h-3.44a.75.75 0 010-1.5z" clipRule="evenodd" />
-                      <path fillRule="evenodd" d="M5.25 6.75a1.5 1.5 0 00-1.5 1.5v10.5a1.5 1.5 0 001.5 1.5h10.5a1.5 1.5 0 001.5-1.5V15a.75.75 0 011.5 0v3.75a3 3 0 01-3 3H5.25a3 3 0 01-3-3V8.25a3 3 0 013-3H9a.75.75 0 010 1.5H5.25z" clipRule="evenodd" />
+                      <path fillRule="evenodd" d="M5.25 6.75a1.5 1.5 0 00-1.5 1.5v10.5a1.5 1.5 0 001.5 1.5h10.5a1.5 1.5 0 001.5-1.5v-5.879a1.5 1.5 0 00-.44-1.06L9.44 6.439A1.5 1.5 0 008.378 6H4.5z" clipRule="evenodd" />
                     </svg>
                     <span className="text-xs">Details</span>
                   </a>

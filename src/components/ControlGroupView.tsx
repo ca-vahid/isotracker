@@ -27,6 +27,7 @@ interface ControlGroupViewProps {
   onUpdateControl: (id: string, updates: Partial<Omit<Control, 'id'>>) => Promise<void>;
   onDeleteControl: (id: string) => Promise<void>;
   onDragEnd: (event: DragEndEvent) => void;
+  onCloneControl?: (control: Control) => Promise<void>;
   renderControl?: (control: Control) => React.ReactNode;
 }
 
@@ -38,6 +39,7 @@ export function ControlGroupView({
   onUpdateControl,
   onDeleteControl,
   onDragEnd,
+  onCloneControl,
   renderControl
 }: ControlGroupViewProps) {
   
@@ -309,6 +311,7 @@ export function ControlGroupView({
                 technicians={technicians}
                 onUpdateControl={onUpdateControl}
                 onDeleteControl={onDeleteControl}
+                onCloneControl={onCloneControl}
                 viewDensity={viewDensity}
               />
             )}

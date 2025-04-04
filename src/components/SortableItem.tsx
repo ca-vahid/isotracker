@@ -12,6 +12,7 @@ interface SortableItemProps {
   technicians?: Technician[];
   onUpdateControl?: (id: string, updates: Partial<Omit<Control, 'id'>>) => Promise<void>;
   onDeleteControl?: (id: string) => Promise<void>;
+  onCloneControl?: (control: Control) => Promise<void>;
   viewDensity?: ViewDensity;
   children?: React.ReactNode;
 }
@@ -22,6 +23,7 @@ export function SortableItem({
   technicians,
   onUpdateControl,
   onDeleteControl,
+  onCloneControl,
   viewDensity = 'medium',
   children
 }: SortableItemProps) {
@@ -71,6 +73,7 @@ export function SortableItem({
               technicians={technicians}
               onUpdateControl={onUpdateControl}
               onDeleteControl={onDeleteControl}
+              onCloneControl={onCloneControl}
               viewDensity={viewDensity}
             />
           ) : null
