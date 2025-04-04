@@ -6,7 +6,8 @@ import {
   query, // Import query
   orderBy, // Import orderBy
   QueryDocumentSnapshot, // Import QueryDocumentSnapshot
-  DocumentData // Import DocumentData for typing doc.data()
+  DocumentData, // Import DocumentData for typing doc.data()
+  serverTimestamp
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase/firebase'; // Import db instance
 import { Control, ControlStatus } from '@/lib/types';
@@ -61,6 +62,10 @@ export async function GET() {
         estimatedCompletionDate: sanitizedTimestamp,
         assigneeId: data.assigneeId as string | null,
         order: data.order as number,
+        priorityLevel: data.priorityLevel || null,
+        tags: data.tags || [],
+        progress: data.progress || 0,
+        lastUpdated: data.lastUpdated || null
       } as Control; 
     });
 
@@ -79,7 +84,7 @@ export async function POST(request: Request) {
       dcfId,
       title,
       explanation = '', // Default explanation to empty string
-      status = ControlStatus.NotStarted, // Default status
+      status = ControlStatus.InProgress, // Default status
       estimatedCompletionDate = null,
       assigneeId = null,
       order // Order should be provided, maybe based on current count?
@@ -168,6 +173,10 @@ export async function POST(request: Request) {
       estimatedCompletionDate: firestoreDate,
       assigneeId,
       order,
+      priorityLevel: null,
+      tags: [],
+      progress: 0,
+      lastUpdated: serverTimestamp()
     };
 
     const docRef = await addDoc(collection(db, CONTROLS_COLLECTION), newControlData);
@@ -210,6 +219,10 @@ export async function POST(request: Request) {
         : null,
       assigneeId: newControlData.assigneeId,
       order: newControlData.order,
+      priorityLevel: newControlData.priorityLevel,
+      tags: newControlData.tags,
+      progress: newControlData.progress,
+      lastUpdated: null // We don't need to send the server timestamp back
     };
 
     return NextResponse.json(responseControl, { status: 201 });

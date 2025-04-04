@@ -23,6 +23,8 @@ import { AddControlForm } from './AddControlForm'; // Import the new form compon
 import { TimelineView } from './TimelineView';
 import { CollapsibleGroup } from './CollapsibleGroup';
 import { BatchOperationsToolbar } from './BatchOperationsToolbar';
+import { Modal } from './Modal'; // We'll create this next
+import { useNewItemAnimation } from '@/lib/hooks/useNewItemAnimation';
 
 export function ControlList() {
   const [controls, setControls] = useState<Control[]>([]);
@@ -35,6 +37,31 @@ export function ControlList() {
   const [viewMode, setViewMode] = useState<ViewMode>('kanban');
   const [viewDensity, setViewDensity] = useState<ViewDensity>('medium');
   const [selectedControlIds, setSelectedControlIds] = useState<string[]>([]);
+  const [newItemIds, addNewItem] = useNewItemAnimation(3000); // Animation lasts 3 seconds
+
+  // Keyboard shortcut for adding a new control
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      // Only trigger if no text input elements are focused
+      const activeElement = document.activeElement;
+      const isInputActive = activeElement instanceof HTMLInputElement || 
+                            activeElement instanceof HTMLTextAreaElement ||
+                            activeElement instanceof HTMLSelectElement ||
+                            activeElement?.hasAttribute('contenteditable');
+      
+      // Check if 'n' is pressed and no modal is open and no input is focused
+      if (e.key === 'n' && !showAddForm && !isInputActive) {
+        setShowAddForm(true);
+        e.preventDefault(); // Prevent 'n' from being typed somewhere
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyPress);
+    
+    return () => {
+      document.removeEventListener('keydown', handleKeyPress);
+    };
+  }, [showAddForm]);
 
   // Sensors for dnd-kit
   const sensors = useSensors(
@@ -327,55 +354,13 @@ export function ControlList() {
 
           const savedControl: Control = await response.json();
           
-          // Update the temporary control with the real ID and potentially server data
+          // Update the controls list with the new control from the server
           setControls(prevControls => 
               prevControls.map(c => {
                   if (c.id === tempId) {
-                      // Create a cleaned up version of the saved control
-                      const cleanedControl = { ...savedControl };
-                      
-                      // Safely convert the estimatedCompletionDate if it exists
-                      let validTimestamp = null;
-                      if (savedControl.estimatedCompletionDate) {
-                          try {
-                              // Check if it's already a valid Timestamp
-                              if (savedControl.estimatedCompletionDate instanceof Timestamp) {
-                                  // Verify it's valid
-                                  const { seconds, nanoseconds } = savedControl.estimatedCompletionDate;
-                                  if (!isNaN(seconds) && !isNaN(nanoseconds)) {
-                                      validTimestamp = savedControl.estimatedCompletionDate;
-                                  }
-                              } 
-                              // If it's a string (ISO date)
-                              else if (typeof savedControl.estimatedCompletionDate === 'string') {
-                                  const date = new Date(savedControl.estimatedCompletionDate);
-                                  if (!isNaN(date.getTime())) {
-                                      validTimestamp = Timestamp.fromDate(date);
-                                  }
-                              }
-                              // If it's a Timestamp-like object
-                              else if (savedControl.estimatedCompletionDate && 
-                                      'seconds' in savedControl.estimatedCompletionDate &&
-                                      'nanoseconds' in savedControl.estimatedCompletionDate) {
-                                  const seconds = (savedControl.estimatedCompletionDate as any).seconds;
-                                  const nanoseconds = (savedControl.estimatedCompletionDate as any).nanoseconds;
-                                  if (typeof seconds === 'number' && !isNaN(seconds) &&
-                                      typeof nanoseconds === 'number' && !isNaN(nanoseconds)) {
-                                      validTimestamp = new Timestamp(seconds, nanoseconds);
-                                  }
-                              } 
-                          } catch (error) {
-                              console.error("Failed to convert timestamp from server response:", error);
-                              // Keep it null
-                          }
-                      }
-                      
-                      return { 
-                          ...c, // Keep optimistic data like explanation
-                          ...cleanedControl, // Overwrite with server data (ID, potentially others)
-                          // Use the validated timestamp or null
-                          estimatedCompletionDate: validTimestamp,
-                      };
+                      // Add the new control to the animation list
+                      addNewItem(savedControl.id);
+                      return savedControl;
                   }
                   return c;
               })
@@ -393,7 +378,7 @@ export function ControlList() {
           // Re-throw so AddControlForm can also catch it and display inline error
           throw err; 
       }
-  }, [controls]); // Add controls to dependency array
+  }, [controls, addNewItem]); // Add addNewItem to dependency array
 
   // Drag End Handler
   const handleDragEnd = (event: DragEndEvent) => {
@@ -498,6 +483,27 @@ export function ControlList() {
       setError("Failed to perform batch update. Please try again.");
     }
   };
+
+  // Update renderControl function or the ControlGroupView/ControlCard usage to pass the isNew prop
+  const renderControl = useCallback((control: Control) => {
+    const isNew = newItemIds.includes(control.id);
+    
+    return (
+      <div 
+        key={control.id}
+        className={`${isNew ? 'animate-highlight' : ''}`}
+      >
+        <ControlCard
+          key={control.id}
+          control={control}
+          technicians={technicians}
+          onUpdateControl={handleUpdateControl}
+          onDeleteControl={handleDeleteControl}
+          viewDensity={viewDensity}
+        />
+      </div>
+    );
+  }, [technicians, handleUpdateControl, handleDeleteControl, viewDensity, newItemIds]);
 
   // Render logic
   if (loading) {
@@ -635,28 +641,33 @@ export function ControlList() {
           
           {/* Add Control Button */}
           <button 
-            onClick={() => setShowAddForm(!showAddForm)}
-            className={`rounded-md transition-colors ${
-              showAddForm 
-                ? 'bg-gray-200 text-gray-800 hover:bg-gray-300' 
-                : 'bg-indigo-600 text-white hover:bg-indigo-700'
-            } px-4 py-2 text-sm font-medium ml-2`}
+            onClick={() => setShowAddForm(true)}
+            className="rounded-md transition-colors bg-indigo-600 text-white hover:bg-indigo-700 px-4 py-2 text-sm font-medium ml-2 relative group"
+            aria-label="Add new control (press 'n')"
           >
-            {showAddForm ? 'Cancel' : '+ Add Control'}
+            <span className="flex items-center">
+              + Add Control
+              <span className="hidden md:inline-flex ml-1.5 items-center justify-center h-5 w-5 text-xs bg-white/20 rounded">
+                n
+              </span>
+            </span>
+            <span className="absolute bottom-full mb-2 right-0 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              Press 'n' to add new control
+            </span>
           </button>
         </div>
       </div>
       
-      {/* Add Control Form */}
+      {/* Add Control Modal */}
       {showAddForm && (
-        <div className="mb-6">
+        <Modal isOpen={showAddForm} onClose={() => setShowAddForm(false)}>
           <AddControlForm 
             technicians={technicians}
             currentOrderCount={controls.length}
             onAddControl={handleAddControl}
             onCancel={() => { setShowAddForm(false); setError(null); }}
           />
-        </div>
+        </Modal>
       )}
       
       {/* Batch Operations Toolbar */}
@@ -687,6 +698,7 @@ export function ControlList() {
               onUpdateControl={handleUpdateControl}
               onDeleteControl={handleDeleteControl}
               onDragEnd={handleDragEnd}
+              renderControl={renderControl}
             />
           )}
           

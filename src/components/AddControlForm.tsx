@@ -20,9 +20,10 @@ export function AddControlForm({
   const [dcfId, setDcfId] = useState('');
   const [title, setTitle] = useState('');
   const [explanation, setExplanation] = useState('');
-  const [status, setStatus] = useState<ControlStatus>(ControlStatus.NotStarted);
+  const [status, setStatus] = useState<ControlStatus>(ControlStatus.InProgress);
   const [assigneeId, setAssigneeId] = useState<string | null>(null);
   const [estimatedCompletionDate, setEstimatedCompletionDate] = useState<string>(''); // Store as string YYYY-MM-DD
+  const [externalUrl, setExternalUrl] = useState<string>(''); // Add state for external URL
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -54,6 +55,17 @@ export function AddControlForm({
       }
     }
 
+    // Process external URL if provided
+    let processedUrl = null;
+    if (externalUrl.trim()) {
+      let url = externalUrl.trim();
+      // Add https:// if no protocol specified
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        url = 'https://' + url;
+      }
+      processedUrl = url;
+    }
+
     const newControlData: Omit<Control, 'id'> = {
       dcfId: dcfId.trim(),
       title: title.trim(),
@@ -62,6 +74,11 @@ export function AddControlForm({
       assigneeId: assigneeId || null,
       estimatedCompletionDate: dateTimestamp,
       order: currentOrderCount, // Set order based on current count
+      priorityLevel: null,
+      tags: [],
+      progress: 0,
+      lastUpdated: Timestamp.now(),
+      externalUrl: processedUrl // Add the external URL
     };
 
     try {
@@ -80,12 +97,12 @@ export function AddControlForm({
   return (
     <form 
       onSubmit={handleSubmit} 
-      className="rounded-lg border bg-card text-card-foreground shadow-sm p-4 mb-4 space-y-3"
+      className="space-y-4"
     >
-      <h4 className="text-md font-semibold mb-2">Add New Control</h4>
+      <h3 id="modal-title" className="text-xl font-semibold text-gray-900 mb-2">Add New Control</h3>
       
       {/* Row 1: DCF ID & Title */} 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label htmlFor="dcfId" className="block text-sm font-medium text-gray-700 mb-1">DCF Identifier <span className="text-red-500">*</span></label>
           <input
@@ -95,6 +112,7 @@ export function AddControlForm({
             onChange={(e) => setDcfId(e.target.value)}
             className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm h-9 px-2 py-1 bg-white"
             required
+            autoFocus
           />
         </div>
         <div>
@@ -111,7 +129,7 @@ export function AddControlForm({
       </div>
 
       {/* Row 2: Explanation */} 
-       <div>
+      <div>
           <label htmlFor="explanation" className="block text-sm font-medium text-gray-700 mb-1">Explanation</label>
           <textarea
             id="explanation"
@@ -120,9 +138,25 @@ export function AddControlForm({
             rows={3}
             className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 bg-white"
           />
+      </div>
+      
+      {/* Row 3: External URL */}
+      <div>
+        <label htmlFor="external-url" className="block text-sm font-medium text-gray-700 mb-1">External URL</label>
+        <div className="flex">
+          <input
+            type="url"
+            id="external-url"
+            value={externalUrl}
+            onChange={(e) => setExternalUrl(e.target.value)}
+            placeholder="https://tickets.example.com/ticket/123"
+            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm h-9 px-2 py-1 bg-white"
+          />
         </div>
+        <p className="mt-1 text-xs text-gray-500">Link to external ticketing system (optional)</p>
+      </div>
 
-      {/* Row 3: Status, Assignee, Date */} 
+      {/* Row 4: Status, Assignee, Date */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
          <div>
           <label htmlFor="add-status" className="block text-xs font-medium text-gray-500 mb-1">Status</label>
@@ -164,24 +198,35 @@ export function AddControlForm({
       </div>
 
       {error && (
-          <p className="text-red-500 text-xs mt-2">Error: {error}</p>
+          <div className="bg-red-50 border border-red-200 rounded px-3 py-2 text-red-600 text-xs">
+            <p className="font-medium">Error:</p>
+            <p>{error}</p>
+          </div>
       )}
 
       {/* Action Buttons */}
-      <div className="flex justify-end gap-2 pt-2">
+      <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 mt-6">
           <button 
             type="button" 
             onClick={onCancel}
-            className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2"
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
           >
               Cancel
           </button>
            <button 
             type="submit" 
             disabled={isSubmitting || !dcfId.trim() || !title.trim()}
-            className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-indigo-600 text-white hover:bg-indigo-700 h-9 px-4 py-2"
+            className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-             {isSubmitting ? 'Adding...' : 'Add Control'}
+             {isSubmitting ? (
+               <>
+                 <svg className="w-4 h-4 mr-2 -ml-1 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                 </svg>
+                 Adding...
+               </>
+             ) : 'Add Control'}
           </button>
       </div>
     </form>

@@ -8,11 +8,12 @@ import { ControlCard } from './ControlCard';
 
 interface SortableItemProps {
   id: string;
-  control: Control;
-  technicians: Technician[];
-  onUpdateControl: (id: string, updates: Partial<Omit<Control, 'id'>>) => Promise<void>;
-  onDeleteControl: (id: string) => Promise<void>;
+  control?: Control;
+  technicians?: Technician[];
+  onUpdateControl?: (id: string, updates: Partial<Omit<Control, 'id'>>) => Promise<void>;
+  onDeleteControl?: (id: string) => Promise<void>;
   viewDensity?: ViewDensity;
+  children?: React.ReactNode;
 }
 
 export function SortableItem({
@@ -21,7 +22,8 @@ export function SortableItem({
   technicians,
   onUpdateControl,
   onDeleteControl,
-  viewDensity = 'medium'
+  viewDensity = 'medium',
+  children
 }: SortableItemProps) {
   const {
     attributes,
@@ -62,13 +64,17 @@ export function SortableItem({
       
       {/* Add a subtle highlight effect when dragging */}
       <div className={`pl-6 transition-all duration-200 ${isDragging ? 'ring-2 ring-indigo-300 ring-opacity-50 rounded-lg' : ''}`}>
-        <ControlCard
-          control={control}
-          technicians={technicians}
-          onUpdateControl={onUpdateControl}
-          onDeleteControl={onDeleteControl}
-          viewDensity={viewDensity}
-        />
+        {children || (
+          control && technicians && onUpdateControl && onDeleteControl ? (
+            <ControlCard
+              control={control}
+              technicians={technicians}
+              onUpdateControl={onUpdateControl}
+              onDeleteControl={onDeleteControl}
+              viewDensity={viewDensity}
+            />
+          ) : null
+        )}
       </div>
     </div>
   );

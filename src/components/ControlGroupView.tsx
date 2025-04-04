@@ -27,6 +27,7 @@ interface ControlGroupViewProps {
   onUpdateControl: (id: string, updates: Partial<Omit<Control, 'id'>>) => Promise<void>;
   onDeleteControl: (id: string) => Promise<void>;
   onDragEnd: (event: DragEndEvent) => void;
+  renderControl?: (control: Control) => React.ReactNode;
 }
 
 export function ControlGroupView({
@@ -36,7 +37,8 @@ export function ControlGroupView({
   viewDensity = 'medium',
   onUpdateControl,
   onDeleteControl,
-  onDragEnd
+  onDragEnd,
+  renderControl
 }: ControlGroupViewProps) {
   
   const [activeControl, setActiveControl] = React.useState<Control | null>(null);
@@ -67,7 +69,17 @@ export function ControlGroupView({
       
       // Add controls to their status groups
       controls.forEach(control => {
-        result[control.status].push(control);
+        // Check if the status exists in our result object
+        // This handles cases where database has controls with status values not in the current enum
+        if (result[control.status]) {
+          result[control.status].push(control);
+        } else {
+          // For controls with obsolete status values, put them in In Progress by default
+          result[ControlStatus.InProgress].push(control);
+          
+          // Optionally, you could update the control's status in the database here
+          // by calling onUpdateControl(control.id, { status: ControlStatus.InProgress })
+        }
       });
     } else if (groupBy === 'assignee') {
       // Create a map of technician IDs to names
@@ -103,22 +115,12 @@ export function ControlGroupView({
   // For status groups, define the order and styles
   const statusOrder = Object.values(ControlStatus);
   const statusStyles: Record<string, { bg: string; text: string; border: string; icon: React.ReactNode }> = {
-    [ControlStatus.NotStarted]: {
-      bg: 'bg-gradient-to-br from-slate-50 to-slate-100',
-      text: 'text-slate-800',
-      border: 'border-slate-200',
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 mr-2 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      )
-    },
     [ControlStatus.InProgress]: {
-      bg: 'bg-gradient-to-br from-blue-50 to-blue-100',
-      text: 'text-blue-800',
-      border: 'border-blue-200',
+      bg: 'bg-gradient-to-br from-indigo-50 to-indigo-100',
+      text: 'text-indigo-800',
+      border: 'border-indigo-200',
       icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 mr-2 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 mr-2 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
         </svg>
       )
@@ -141,16 +143,6 @@ export function ControlGroupView({
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 mr-2 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-        </svg>
-      )
-    },
-    [ControlStatus.OnHold]: {
-      bg: 'bg-gradient-to-br from-red-50 to-red-100',
-      text: 'text-red-800',
-      border: 'border-red-200',
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 mr-2 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
         </svg>
       )
     }
@@ -267,15 +259,24 @@ export function ControlGroupView({
                     : 'p-4 space-y-4'
                 } ${groups[groupName].length === 0 ? 'p-0' : ''}`}>
                   {groups[groupName].map(control => (
-                    <SortableItem
-                      key={control.id}
-                      id={control.id}
-                      control={control}
-                      technicians={technicians}
-                      onUpdateControl={onUpdateControl}
-                      onDeleteControl={onDeleteControl}
-                      viewDensity={viewDensity}
-                    />
+                    renderControl ? (
+                      <SortableItem
+                        key={control.id}
+                        id={control.id}
+                      >
+                        {renderControl(control)}
+                      </SortableItem>
+                    ) : (
+                      <SortableItem
+                        key={control.id}
+                        id={control.id}
+                        control={control}
+                        technicians={technicians}
+                        onUpdateControl={onUpdateControl}
+                        onDeleteControl={onDeleteControl}
+                        viewDensity={viewDensity}
+                      />
+                    )
                   ))}
                   
                   {groups[groupName].length === 0 && (
@@ -300,13 +301,17 @@ export function ControlGroupView({
       <DragOverlay adjustScale={true}>
         {activeControl ? (
           <div className="bg-white border shadow-lg rounded-lg opacity-90 w-full max-w-md">
-            <ControlCard
-              control={activeControl}
-              technicians={technicians}
-              onUpdateControl={onUpdateControl}
-              onDeleteControl={onDeleteControl}
-              viewDensity={viewDensity}
-            />
+            {renderControl ? (
+              renderControl(activeControl)
+            ) : (
+              <ControlCard
+                control={activeControl}
+                technicians={technicians}
+                onUpdateControl={onUpdateControl}
+                onDeleteControl={onDeleteControl}
+                viewDensity={viewDensity}
+              />
+            )}
           </div>
         ) : null}
       </DragOverlay>

@@ -2,6 +2,24 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Modal animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); }
+  to { transform: translateY(0); }
+}
+
+/* New item highlight animation */
+@keyframes highlightPulse {
+  0% { background-color: transparent; }
+  20% { background-color: rgba(99, 102, 241, 0.12); }
+  100% { background-color: transparent; }
+}
+
 :root {
   --foreground-rgb: 0, 0, 0;
   --background-start-rgb: 214, 219, 220;
@@ -29,5 +47,24 @@ body {
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+  
+  .animate-fadeIn {
+    animation-name: fadeIn;
+    animation-duration: 0.2s;
+    animation-fill-mode: both;
+  }
+  
+  .animate-slideUp {
+    animation-name: slideUp;
+    animation-duration: 0.2s;
+    animation-fill-mode: both;
+  }
+  
+  .animate-highlight {
+    animation-name: highlightPulse;
+    animation-duration: 3s;
+    animation-fill-mode: both;
+    animation-timing-function: ease-out;
   }
 }
