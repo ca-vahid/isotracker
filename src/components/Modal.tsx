@@ -67,12 +67,12 @@ export function Modal({ isOpen, onClose, children }: ModalProps) {
         <div className="sticky top-0 flex items-center justify-end p-2 bg-white z-10">
           <button
             onClick={onClose}
-            className="p-1 text-gray-400 rounded-full hover:bg-gray-100 hover:text-gray-600 transition-colors"
+            className="p-1.5 text-gray-500 rounded-full hover:bg-gray-100 hover:text-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-200 focus:ring-offset-1"
             aria-label="Close"
           >
             <svg 
               xmlns="http://www.w3.org/2000/svg" 
-              className="h-6 w-6" 
+              className="h-5 w-5" 
               fill="none" 
               viewBox="0 0 24 24" 
               stroke="currentColor"

@@ -642,7 +642,7 @@ export function ControlList() {
           {/* Add Control Button */}
           <button 
             onClick={() => setShowAddForm(true)}
-            className="rounded-md transition-colors bg-indigo-600 text-white hover:bg-indigo-700 px-4 py-2 text-sm font-medium ml-2 relative group"
+            className="rounded-md transition-all duration-200 bg-indigo-600 text-white hover:bg-indigo-700 px-4 py-2 text-sm font-medium ml-2 relative group shadow-sm hover:shadow focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
             aria-label="Add new control (press 'n')"
           >
             <span className="flex items-center">
@@ -651,7 +651,7 @@ export function ControlList() {
                 n
               </span>
             </span>
-            <span className="absolute bottom-full mb-2 right-0 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            <span className="absolute bottom-full mb-2 right-0 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-lg">
               Press 'n' to add new control
             </span>
           </button>
