@@ -76,7 +76,7 @@ function generateHTMLReport(controls: Control[], technicianMap: Map<string, Tech
       }
 
       return `
-        <tr class="control-row status-${control.status.toLowerCase().replace(' ', '-')}">
+        <tr class="control-row">
           <td class="dcf-cell">
             <span class="dcf-badge">${control.dcfId}</span>
           </td>
@@ -393,50 +393,30 @@ function generateHTMLReport(controls: Control[], technicianMap: Map<string, Tech
     
     <div class="stats">
         <div class="stat-card">
-            <div class="stat-number">${controlsByStatus['In Progress'].length}</div>
-            <div class="stat-label">In Progress</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-number">${controlsByStatus['In Review'].length}</div>
-            <div class="stat-label">In Review</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-number">${controlsByStatus['Complete'].length}</div>
-            <div class="stat-label">Complete</div>
-        </div>
-        <div class="stat-card">
             <div class="stat-number">${controls.length}</div>
             <div class="stat-label">Total Controls</div>
         </div>
     </div>
 
-    ${Object.entries(controlsByStatus).map(([status, controlList]) => `
-        <div class="section status-${status.toLowerCase().replace(' ', '-')}">
-            <div class="section-header">
-                ${status} (${controlList.length} controls)
-            </div>
-            ${controlList.length > 0 ? `
-                <table>
-                    <thead>
-                        <tr>
-                            <th style="width: 120px;">DCF #</th>
-                            <th style="width: 40%;">Task Name</th>
-                            <th style="width: 25%;">URLs</th>
-                            <th style="width: 25%;">Technician</th>
-                            <th style="width: 120px;">Due Date</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${generateControlRows(controlList)}
-                    </tbody>
-                </table>
-            ` : `
-                <div class="empty-section">
-                    No controls in this status
-                </div>
-            `}
+    <div class="section">
+        <div class="section-header">
+            All Controls (${controls.length})
         </div>
-    `).join('')}
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 120px;">DCF #</th>
+                    <th style="width: 40%;">Task Name</th>
+                    <th style="width: 25%;">URLs</th>
+                    <th style="width: 25%;">Technician</th>
+                    <th style="width: 120px;">Due Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${generateControlRows(controls)}
+            </tbody>
+        </table>
+    </div>
     
     <div style="margin-top: 40px; text-align: center; color: #6b7280; font-size: 0.9rem;">
         <p>Generated from ISO Tracker Application</p>
