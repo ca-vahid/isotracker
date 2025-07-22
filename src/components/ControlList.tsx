@@ -29,6 +29,7 @@ import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/firebase';
 import { useUndo, UndoableActionType } from '@/lib/contexts/UndoContext';
 import { useTheme } from '@/lib/contexts/ThemeContext';
+import { useNotification } from '@/lib/contexts/NotificationContext';
 
 interface ControlListProps {
   initialControls?: Control[];
@@ -57,6 +58,7 @@ export function ControlList({ initialControls = [] }: ControlListProps) {
   
   // Theme context to detect dark mode
   const { theme } = useTheme();
+  const { showToast } = useNotification();
 
   // Sensors for dnd-kit
   const sensors = useSensors(
@@ -934,6 +936,39 @@ export function ControlList({ initialControls = [] }: ControlListProps) {
     }
   }, []);
 
+  // Extract controls to HTML file
+  const handleExtractControls = useCallback(async () => {
+    try {
+      setError(null);
+      const response = await fetch('/api/controls/extract');
+      
+      if (!response.ok) {
+        throw new Error('Failed to generate extract');
+      }
+      
+      // Get the HTML content as blob
+      const blob = await response.blob();
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `controls-export-${new Date().toISOString().split('T')[0]}.html`;
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      showToast('Controls exported successfully!', 'success');
+    } catch (error: any) {
+      console.error('Error extracting controls:', error);
+      setError(error.message || 'Failed to extract controls');
+      showToast('Failed to extract controls', 'error');
+    }
+  }, [showToast]);
+
   // Render logic
   if (loading) {
     return (
@@ -1087,6 +1122,16 @@ export function ControlList({ initialControls = [] }: ControlListProps) {
                 <path fillRule="evenodd" d="M8 4h2v2H8V4zm6 0h2v2h-2V4z" fill="currentColor" className="animate-pulse"/>
               </svg>
               Bulk Add with AI
+            </button>
+
+            <button 
+              onClick={handleExtractControls}
+              className="rounded-md transition-colors bg-emerald-600 dark:bg-emerald-500 text-white hover:bg-emerald-700 dark:hover:bg-emerald-600 px-4 py-2 text-sm font-medium flex items-center"
+            >
+              <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Extract HTML
             </button>
           </div>
         </div>
